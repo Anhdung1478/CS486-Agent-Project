@@ -43,13 +43,13 @@ def main():
 
     # List of deliverables to generate sequentially
     deliverables = [
-        {"file": "outputs/01-business-req-analysis-G01.md", "prompt": "Execute Skill 1: Business Requirement Analysis. Analyze the project requirements text and output the markdown file structure."},
-        {"file": "outputs/02-erd-design-G01.md", "prompt": "Execute Skill 2: Conceptual Database Design. Based on the previous analysis, output the ERD design markdown file using text/Mermaid syntax."},
-        {"file": "outputs/03-logical-design-G01.md", "prompt": "Execute Skill 3: Logical Database Design. Convert the design into a logical relational schema markdown file."},
-        {"file": "outputs/04-design-validation-G01.md", "prompt": "Execute Skill 4: Database Design Validation. Review the logical schema against rules and output the validation report."},
-        {"file": "outputs/05-db-definition-G01.sql", "prompt": "Execute Skill 5: Database Implementation (DDL). Write the clean SQL DDL script."},
-        {"file": "outputs/06-sample-data-G01.sql", "prompt": "Execute Skill 6: Sample Data Preparation. Generate the SQL script containing realistic INSERT statements."},
-        {"file": "outputs/07-query-design-G01.sql", "prompt": "Execute Skill 7: Query Design. Generate the 5 business queries with their required metadata descriptions."}
+        {"file": "outputs/01-business-req-analysis-G11.md", "prompt": "Execute Skill 1: Business Requirement Analysis. Analyze the project requirements text and output the markdown file structure."},
+        {"file": "outputs/02-erd-design-G11.md", "prompt": "Execute Skill 2: Conceptual Database Design. Based on the previous analysis, output the ERD design markdown file using text/Mermaid syntax."},
+        {"file": "outputs/03-logical-design-G11.md", "prompt": "Execute Skill 3: Logical Database Design. Convert the design into a logical relational schema markdown file."},
+        {"file": "outputs/04-design-validation-G11.md", "prompt": "Execute Skill 4: Database Design Validation. Review the logical schema against rules and output the validation report."},
+        {"file": "outputs/05-db-definition-G11.sql", "prompt": "Execute Skill 5: Database Implementation (DDL). Write the clean SQL DDL script."},
+        {"file": "outputs/06-sample-data-G11.sql", "prompt": "Execute Skill 6: Sample Data Preparation. Generate the SQL script containing realistic INSERT statements."},
+        {"file": "outputs/07-query-design-G11.sql", "prompt": "Execute Skill 7: Query Design. Generate the 5 business queries with their required metadata descriptions."}
     ]
 
     # Use gemini-2.5-flash as it excels at structured instructions and long context
