@@ -1,133 +1,118 @@
 ```markdown
-# 04-design-validation-GXX.md
+## Database Design Validation Report (Group 11)
 
-## Database Design Validation Report
+**Assumptions:**
+*   The validation assumes the logical schema provided in `03-logical-design-G11.md` is the target for validation.
+*   The validation assumes the business rules extracted in `01-business-req-analysis-G11.md` are comprehensive and accurate.
 
-This report validates the proposed logical relational schema against the initial business requirements and conceptual ERD, ensuring correctness, adherence to business rules, and appropriate use of keys and constraints.
+---
 
-### 1. Overview of Logical Schema
+### 1. Validation against Business Rules
 
-The logical schema consists of the following relations:
+This section validates the logical schema against each business rule identified in the initial analysis.
 
-*   **Users**: Manages all system users and their roles.
-*   **Spaces**: Stores details about all bookable physical spaces.
-*   **Facilities**: Lists available equipment/features.
-*   **SpaceFacilities**: A junction table linking spaces to their facilities.
-*   **Bookings**: Records all booking requests made by users.
-*   **BookingApprovals**: Stores approval/rejection details for bookings.
-*   **UsageSessions**: Captures check-in and completion details for approved bookings.
-*   **MaintenanceRecords**: Manages maintenance activities for spaces.
+**Business Rule 1: Each user must have a university account. The system stores basic user information, including user ID, full name, email, phone number, role, department, and account status.**
+*   **Validation:** The `Users` table includes `user_id` (PK), `full_name`, `email`, `phone_number`, `role`, `department`, and `account_status`. `user_id` is unique and serves as the primary identifier. `email` is also unique.
+*   **Status:** **Validated.**
 
-### 2. Validation Against Business Requirements
+**Business Rule 2: A user may be a student, lecturer, teaching assistant, facility staff, department administrator, or facility manager.**
+*   **Validation:** The `role` attribute in the `Users` table will likely be constrained by a `CHECK` constraint or an enumeration type in the physical schema to enforce these specific values.
+*   **Status:** **Validated** (will be enforced at DDL level).
 
-#### 2.1. Entities and Attributes Coverage
+**Business Rule 3: For each space, the system stores a unique space code, space name, space type, building, floor, room number, capacity, current status, and usage policy.**
+*   **Validation:** The `Spaces` table includes `space_id` (PK), `space_name`, `space_type`, `building`, `floor`, `room_number`, `capacity`, `current_status`, and `usage_policy`. `space_id` is unique. The combination of `building`, `floor`, and `room_number` is also unique.
+*   **Status:** **Validated.**
 
-All identified entities and their critical attributes from the business requirements are represented in the logical schema:
+**Business Rule 4: A space may be available, in use, under maintenance, temporarily closed, or retired.**
+*   **Validation:** The `current_status` attribute in the `Spaces` table will be constrained by a `CHECK` constraint or an enumeration type in the physical schema to enforce these specific values.
+*   **Status:** **Validated** (will be enforced at DDL level).
 
-*   **Users**: `UserID`, `FullName`, `Email`, `PhoneNumber`, `Role`, `Department`, `AccountStatus`. (Matches requirement)
-*   **Spaces**: `SpaceCode`, `SpaceName`, `SpaceType`, `Building`, `Floor`, `RoomNumber`, `Capacity`, `CurrentStatus`, `UsagePolicy`. (Matches requirement)
-*   **Facilities**: `FacilityID`, `FacilityName`. (Matches requirement for "list of facilities")
-*   **Bookings**: `BookingID`, `SpaceCode`, `RequesterID`, `RequestedStartTime`, `RequestedEndTime`, `Purpose`, `ExpectedParticipants`, `BookingStatus`, `SubmissionTime` (added for completeness and audit). (Matches requirement)
-*   **BookingApprovals**: `BookingID`, `ApproverID`, `DecisionTime`, `DecisionNote`, `RejectionReason`. (Matches requirement)
-*   **UsageSessions**: `BookingID`, `CheckInStaffID`, `ActualStartTime`, `InitialCondition`, `CompletionStaffID`, `ActualEndTime`, `FinalCondition`, `UsageNotes`. (Matches requirement for check-in/completion)
-*   **MaintenanceRecords**: `MaintenanceID`, `SpaceCode`, `ReporterID`, `AssignedStaffID`, `ProblemDescription`, `StartTime`, `CompletionTime`, `Status`, `ResultNote`. (Matches requirement)
+**Business Rule 5: Each space may have several facilities, such as a projector, whiteboard, microphone, computer, livestreaming equipment, or air conditioner. The system should store the list of facilities available in each space.**
+*   **Validation:** The `Facilities` table stores `facility_id` (PK) and `facility_name`. The `SpaceFacilities` (junction) table links `Spaces` to `Facilities` via `space_id` and `facility_id`, allowing a many-to-many relationship.
+*   **Status:** **Validated.**
 
-#### 2.2. Primary Keys (PKs) and Candidate Keys (CKs)
+**Business Rule 6: Users can submit booking requests by selecting a space, requested start time, requested end time, purpose of use, and expected number of participants.**
+*   **Validation:** The `Bookings` table includes `booking_id` (PK), `user_id` (FK to `Users`), `space_id` (FK to `Spaces`), `requested_start_time`, `requested_end_time`, `purpose`, and `expected_participants`.
+*   **Status:** **Validated.**
 
-*   **Users**: `UserID` (PK). `Email` is a strong candidate key, assuming unique university emails.
-*   **Spaces**: `SpaceCode` (PK). `(Building, RoomNumber)` is a candidate key, assuming room numbers are unique within a building.
-*   **Facilities**: `FacilityID` (PK). `FacilityName` is a candidate key.
-*   **SpaceFacilities**: `(SpaceCode, FacilityID)` (Composite PK).
-*   **Bookings**: `BookingID` (PK).
-*   **BookingApprovals**: `BookingID` (PK, also FK to Bookings). This ensures one approval record per booking.
-*   **UsageSessions**: `BookingID` (PK, also FK to Bookings). This ensures one usage session record per booking.
-*   **MaintenanceRecords**: `MaintenanceID` (PK).
+**Business Rule 7: A booking may be for a lecture, examination, seminar, workshop, meeting, student activity, or administrative event.**
+*   **Validation:** The `purpose` attribute in the `Bookings` table will be constrained by a `CHECK` constraint or an enumeration type in the physical schema to enforce these specific values.
+*   **Status:** **Validated** (will be enforced at DDL level).
 
-All tables have appropriate primary keys, ensuring entity integrity.
+**Business Rule 8: Each booking request has a status, such as pending, approved, rejected, cancelled, checked in, completed, or no-show.**
+*   **Validation:** The `status` attribute in the `Bookings` table will be constrained by a `CHECK` constraint or an enumeration type in the physical schema to enforce these specific values.
+*   **Status:** **Validated** (will be enforced at DDL level).
 
-#### 2.3. Foreign Keys (FKs) and Relationships
+**Business Rule 9: The system must prevent conflicting bookings. The same space cannot have two approved bookings with overlapping time periods.**
+*   **Validation:** This is a complex temporal constraint that typically requires application-level logic or advanced database features (e.g., exclusion constraints in PostgreSQL, or triggers). The logical schema provides the necessary `space_id`, `requested_start_time`, and `requested_end_time` attributes in the `Bookings` table, along with the `status` attribute, to implement this. A unique constraint on `(space_id, requested_start_time, requested_end_time)` combined with a `status = 'approved'` check would partially address it, but true overlap detection needs more. For a standard relational schema, this is primarily an application-level concern, but the schema provides the necessary data points.
+*   **Status:** **Partially Validated** (Schema provides necessary attributes; full enforcement requires application logic or advanced DB features).
 
-All relationships identified in the conceptual design are correctly translated into the logical schema using foreign keys:
+**Business Rule 10: A space that is under maintenance, closed, or retired cannot be booked.**
+*   **Validation:** The `current_status` in the `Spaces` table and `status` in `MaintenanceRecords` (for `under maintenance`) provide the necessary information. This constraint will be enforced by application logic during booking submission and approval.
+*   **Status:** **Partially Validated** (Schema provides necessary attributes; full enforcement requires application logic).
 
-*   **Users** (Requester, Approver, Check-in Staff, Completion Staff, Reporter, Assigned Staff)
-    *   `Bookings.RequesterID` references `Users.UserID` (Many-to-One: Many bookings by one user).
-    *   `BookingApprovals.ApproverID` references `Users.UserID` (Many-to-One: Many approvals by one staff/manager).
-    *   `UsageSessions.CheckInStaffID` references `Users.UserID` (Many-to-One: Many check-ins by one staff).
-    *   `UsageSessions.CompletionStaffID` references `Users.UserID` (Many-to-One: Many completions by one staff).
-    *   `MaintenanceRecords.ReporterID` references `Users.UserID` (Many-to-One: Many reports by one user).
-    *   `MaintenanceRecords.AssignedStaffID` references `Users.UserID` (Many-to-One: Many assignments to one staff).
-*   **Spaces** (Booked, Has Facilities, Maintained)
-    *   `Bookings.SpaceCode` references `Spaces.SpaceCode` (Many-to-One: Many bookings for one space).
-    *   `SpaceFacilities.SpaceCode` references `Spaces.SpaceCode` (Many-to-Many via junction table).
-    *   `MaintenanceRecords.SpaceCode` references `Spaces.SpaceCode` (Many-to-One: Many maintenance records for one space).
-*   **Facilities** (Available in Spaces)
-    *   `SpaceFacilities.FacilityID` references `Facilities.FacilityID` (Many-to-Many via junction table).
-*   **Bookings** (Approved, Used)
-    *   `BookingApprovals.BookingID` references `Bookings.BookingID` (One-to-One/Optional: A booking *may* have an approval).
-    *   `UsageSessions.BookingID` references `Bookings.BookingID` (One-to-One/Optional: A booking *may* have a usage session).
+**Business Rule 11: A booking request may require approval from a facility staff member or manager.**
+*   **Validation:** The `Bookings` table includes `approved_by_user_id` (FK to `Users`), `decision_time`, and `decision_note`. The `Users` table's `role` attribute allows identification of facility staff/managers.
+*   **Status:** **Validated.**
 
-All foreign keys are defined, ensuring referential integrity.
+**Business Rule 12: If the booking is rejected, the rejection reason should be stored.**
+*   **Validation:** The `decision_note` attribute in the `Bookings` table can store the rejection reason.
+*   **Status:** **Validated.**
 
-#### 2.4. Cardinalities and Participation Constraints
+**Business Rule 13: When the requester arrives, facility staff can check in the booking. The system records the actual start time, the person who checked in the booking, and the initial condition of the space.**
+*   **Validation:** The `Bookings` table includes `actual_start_time`, `checked_in_by_user_id` (FK to `Users`), and `initial_condition_notes`.
+*   **Status:** **Validated.**
 
-*   **Mandatory Participation:**
-    *   A booking *must* have a requester (`Bookings.RequesterID` is `NOT NULL`).
-    *   A booking *must* be for a space (`Bookings.SpaceCode` is `NOT NULL`).
-    *   A space *must* have a space code (`Spaces.SpaceCode` is PK, `NOT NULL`).
-    *   A maintenance record *must* be for a space (`MaintenanceRecords.SpaceCode` is `NOT NULL`).
-*   **Optional Participation:**
-    *   A booking *may* have an approval (`BookingApprovals.BookingID` is PK, but insertion into `BookingApprovals` is optional).
-    *   A booking *may* have a usage session (`UsageSessions.BookingID` is PK, but insertion into `UsageSessions` is optional).
-    *   A maintenance record's `CompletionTime` and `ResultNote` can be `NULL` if not yet completed.
-    *   `BookingApprovals.RejectionReason` can be `NULL` if the booking is approved.
+**Business Rule 14: When the session ends, facility staff can complete the booking by recording the actual end time, the final condition of the space, and any usage notes.**
+*   **Validation:** The `Bookings` table includes `actual_end_time`, `final_condition_notes`, and `usage_notes`.
+*   **Status:** **Validated.**
 
-These are generally handled by `NOT NULL` constraints on FKs where participation is mandatory, and by allowing `NULL` where optional.
+**Business Rule 15: The system also supports basic maintenance management. A space may have maintenance records for problems such as broken projectors, air-conditioning failure, damaged furniture, cleaning issues, or network problems.**
+*   **Validation:** The `MaintenanceRecords` table is designed for this, linking to `Spaces` via `space_id`. It includes `problem_description`.
+*   **Status:** **Validated.**
 
-### 3. Validation Against Specific Business Rules
+**Business Rule 16: Each maintenance record stores the related space, reporter, assigned staff member, problem description, start time, completion time, status, and result note.**
+*   **Validation:** The `MaintenanceRecords` table includes `maintenance_id` (PK), `space_id` (FK to `Spaces`), `reported_by_user_id` (FK to `Users`), `assigned_to_user_id` (FK to `Users`), `problem_description`, `start_time`, `completion_time`, `status`, and `result_note`.
+*   **Status:** **Validated.**
 
-1.  **User Roles and Space Status/Types:**
-    *   `Users.Role`, `Spaces.SpaceType`, `Spaces.CurrentStatus`, `Bookings.Purpose`, `Bookings.BookingStatus`, `MaintenanceRecords.Status` will be enforced using `CHECK` constraints or `ENUM` types in the DDL, ensuring data integrity for predefined values.
-2.  **Space Capacity:**
-    *   `Spaces.Capacity` will have a `CHECK` constraint (`Capacity > 0`).
-    *   `Bookings.ExpectedParticipants` will have a `CHECK` constraint (`ExpectedParticipants > 0`).
-    *   Application logic will be needed to ensure `ExpectedParticipants` does not exceed `Spaces.Capacity`.
-3.  **Booking Conflict Prevention (Overlapping Times):**
-    *   The schema provides `SpaceCode`, `RequestedStartTime`, `RequestedEndTime` in the `Bookings` table.
-    *   **Direct DDL enforcement for overlapping times is complex (e.g., using exclusion constraints in PostgreSQL). For a standard relational schema, this rule will primarily be enforced by application logic at the time of booking submission and approval.** The database design *supports* the data needed for this check.
-    *   A unique constraint on `(SpaceCode, RequestedStartTime, RequestedEndTime)` is not sufficient as it only prevents exact duplicates, not overlaps.
-4.  **Booking Prevention for Unavailable Spaces:**
-    *   "A space that is under maintenance, closed, or retired cannot be booked."
-    *   This rule requires a dynamic check against `Spaces.CurrentStatus` when a booking is attempted.
-    *   **This is best enforced by application logic or potentially a database trigger (more advanced DDL).** The schema provides the necessary `Spaces.CurrentStatus` attribute.
-5.  **Booking Approval Details:**
-    *   `BookingApprovals` table correctly stores `ApproverID`, `DecisionTime`, `DecisionNote`, and `RejectionReason` (nullable).
-    *   `DecisionTime` should be `CHECK`ed to be after `Bookings.SubmissionTime`.
-6.  **Booking Check-in/Completion Details:**
-    *   `UsageSessions` table correctly stores `CheckInStaffID`, `ActualStartTime`, `InitialCondition`, `CompletionStaffID`, `ActualEndTime`, `FinalCondition`, `UsageNotes`.
-    *   `ActualStartTime` should be `CHECK`ed to be before `ActualEndTime`.
-    *   `ActualStartTime` should ideally be close to `RequestedStartTime`, and `ActualEndTime` close to `RequestedEndTime`, which is an application-level validation.
-7.  **Maintenance Records:**
-    *   `MaintenanceRecords` table captures all required attributes.
-    *   `StartTime` should be `CHECK`ed to be before `CompletionTime` (if `CompletionTime` is not `NULL`).
-8.  **Historical Records:**
-    *   The design inherently supports historical records for bookings, approvals, usage sessions, and maintenance activities as all past records are retained in their respective tables.
+**Business Rule 17: A space under maintenance cannot be booked.**
+*   **Validation:** This is related to Business Rule 10. The `MaintenanceRecords` table's `status` attribute (e.g., 'active', 'pending', 'completed') and `start_time`/`completion_time` allow the application to determine if a space is currently under maintenance. This will be enforced by application logic.
+*   **Status:** **Partially Validated** (Schema provides necessary attributes; full enforcement requires application logic).
 
-### 4. Normalization Review
+**Business Rule 18: The system should keep historical records of bookings and maintenance activities.**
+*   **Validation:** Both `Bookings` and `MaintenanceRecords` tables are designed to store records indefinitely, providing historical data. No explicit deletion or archiving strategy is implied, so the current design supports this.
+*   **Status:** **Validated.**
 
-The schema appears to be in at least 3rd Normal Form (3NF):
+**Business Rule 19: Staff should be able to view booking history, upcoming bookings, spaces under maintenance, and no-show bookings.**
+*   **Validation:** The schema provides all necessary attributes (`Bookings.status`, `Bookings.requested_start_time`, `MaintenanceRecords.status`, `MaintenanceRecords.start_time`, `MaintenanceRecords.completion_time`) to construct queries for these views.
+*   **Status:** **Validated.**
 
-*   **1NF (First Normal Form):** All attributes are atomic, and there are no repeating groups.
-*   **2NF (Second Normal Form):** All non-key attributes are fully dependent on the primary key. For composite keys (e.g., `SpaceFacilities`), non-key attributes (none in this case) would depend on the *entire* key.
-*   **3NF (Third Normal Form):** There are no transitive dependencies. Non-key attributes do not depend on other non-key attributes. For example, `Department` in `Users` depends on `UserID`, not `Role`.
+**Business Rule 20: The main goal of the system is to help the School manage shared campus spaces fairly, avoid overlapping bookings, prevent the use of unavailable spaces, and preserve usage history.**
+*   **Validation:** The schema design directly supports these goals by providing structured data for bookings, space status, maintenance, and user roles, enabling the application to implement the necessary logic for fairness, conflict prevention, and historical tracking.
+*   **Status:** **Validated.**
 
-### 5. Conclusion
+---
 
-The logical relational schema is conceptually sound and accurately represents the entities, attributes, and relationships derived from the business requirements. It adheres to normalization principles and provides the necessary structure to store all required information.
+### 2. Data Anomalies Check
 
-While most business rules can be enforced through DDL (PKs, FKs, `NOT NULL`, `CHECK` constraints), complex rules like preventing overlapping bookings or booking unavailable spaces will require additional enforcement mechanisms, such as:
-*   **Application-level logic:** For real-time checks during booking submission.
-*   **Database triggers:** For more robust, server-side enforcement of complex inter-table rules.
-*   **Exclusion constraints (if supported by the RDBMS):** For direct database enforcement of non-overlapping time periods.
+The logical design adheres to at least 3rd Normal Form (3NF), minimizing data anomalies:
 
-The current design provides a solid foundation for implementing the Campus Space Management System.
+*   **Insertion Anomalies:** No data can be inserted without a primary key, and non-key attributes are dependent on the full primary key. For example, a `Space` can be added without `Facilities` or `Bookings`, and a `User` can be added without `Bookings` or `MaintenanceRecords`.
+*   **Deletion Anomalies:** Deleting a record in one table does not inadvertently delete unrelated information. For example, deleting a `Booking` does not delete the `User` or `Space` involved.
+*   **Update Anomalies:** Information is stored in one place, preventing inconsistencies. For example, `Space` details are in the `Spaces` table only; updating a space's capacity only requires one change.
+
+**Specific checks:**
+*   **Normalization:**
+    *   **1NF:** All tables have primary keys, and all attributes are atomic (e.g., `full_name` is a single attribute, not broken into first/last as per requirement, which is acceptable).
+    *   **2NF:** All non-key attributes are fully functionally dependent on the primary key. This is ensured by the design (e.g., `space_name` depends on `space_id`, not just part of a composite key).
+    *   **3NF:** No transitive dependencies exist. For example, `department` is an attribute of `Users`, not indirectly dependent on `user_id` through another non-key attribute. The `SpaceFacilities` table correctly handles the many-to-many relationship between `Spaces` and `Facilities`, preventing transitive dependencies.
+*   **Referential Integrity:** Foreign keys are correctly identified, ensuring that references to primary keys in other tables are valid. This prevents orphaned records (e.g., a booking for a non-existent space).
+*   **Uniqueness Constraints:** Primary keys ensure unique identification for each entity. Additional unique constraints (e.g., `email` for `Users`, `(building, floor, room_number)` for `Spaces`) prevent duplicate logical entries.
+*   **Data Types and Domains:** While not explicitly defined in the logical schema, the attributes are chosen such that appropriate data types (e.g., `DATETIME` for times, `VARCHAR` for names, `INT` for capacity) can be assigned in the physical schema, and `CHECK` constraints will enforce domain integrity for status and role fields.
+
+---
+
+### 3. Conclusion
+
+The logical database design effectively captures all entities, attributes, and relationships identified in the business requirements. It adheres to normalization principles (at least 3NF), minimizing data anomalies. Most business rules are directly supported by the schema structure, including primary/foreign keys, unique constraints, and attribute choices. Complex temporal constraints (e.g., preventing overlapping bookings, checking space availability based on maintenance) are identified as requiring additional application-level logic or advanced database features, but the schema provides all necessary data points for their implementation. The design is robust and provides a solid foundation for the Campus Space Management System.
 ```

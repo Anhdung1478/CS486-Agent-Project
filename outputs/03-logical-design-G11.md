@@ -1,197 +1,124 @@
 ```markdown
-# Logical Relational Schema - Campus Space Management System (G01)
+## Unresolved Questions / Assumptions
 
-This document outlines the logical relational schema derived from the conceptual ERD, detailing relations, attributes, primary keys, foreign keys, candidate keys, and key constraints.
+*   **User ID Generation:** Assumed `UserID` is an auto-incrementing integer.
+*   **Space Code Format:** Assumed `SpaceCode` is a unique string identifier (e.g., "CSB-101").
+*   **ID Generation:** Assumed `BookingID`, `MaintenanceID`, and `FacilityTypeID` are auto-incrementing integers.
+*   **Maintenance Start Time:** Interpreted "start time" for maintenance records as `ReportTime`.
+*   **Conditional Constraints:** Constraints like "RejectionReason must be stored if rejected" or "cannot book a space under maintenance" are noted as business rules to be enforced by the application layer or through more complex database triggers/procedures, as standard DDL `CHECK` constraints might not fully cover them.
+*   **Time Overlap Constraint:** The business rule "The same space cannot have two approved bookings with overlapping time periods" is a complex temporal constraint. While the schema supports the necessary attributes, enforcing this strictly with standard DDL `UNIQUE` or `CHECK` constraints is challenging and typically handled at the application level or with advanced database features (e.g., exclusion constraints in PostgreSQL, which are not standard SQL). For this logical design, it's noted as a critical business rule.
 
----
+## Logical Relational Schema
 
-## 1. Relation: `Users`
+### 1. Relation: `Users`
 
-*   **Purpose:** Stores information about all individuals with a university account who interact with the system.
+*   **Purpose:** Stores information about all university account holders who interact with the system.
 *   **Attributes:**
-    *   `user_id` (INTEGER)
-    *   `full_name` (VARCHAR(255))
-    *   `email` (VARCHAR(255))
-    *   `phone_number` (VARCHAR(20))
-    *   `role` (VARCHAR(50))
-    *   `department` (VARCHAR(100))
-    *   `account_status` (VARCHAR(20))
-*   **Primary Key (PK):** `user_id`
-*   **Candidate Keys (CK):** `email`
-*   **Key Constraints:**
-    *   `user_id` is unique and NOT NULL.
-    *   `email` is unique and NOT NULL.
-    *   `full_name` is NOT NULL.
-    *   `role` is NOT NULL.
-    *   `account_status` is NOT NULL.
-*   **Check Constraints:**
-    *   `role` IN ('student', 'lecturer', 'teaching assistant', 'facility staff', 'department administrator', 'facility manager')
-    *   `account_status` IN ('active', 'inactive', 'suspended')
+    *   `UserID` (PK, INT)
+    *   `FullName` (VARCHAR(255), NOT NULL)
+    *   `Email` (VARCHAR(255), NOT NULL, UNIQUE)
+    *   `PhoneNumber` (VARCHAR(20), NULLABLE)
+    *   `Role` (VARCHAR(50), NOT NULL) - Candidate Key: (Email)
+    *   `Department` (VARCHAR(100), NULLABLE)
+    *   `AccountStatus` (VARCHAR(20), NOT NULL)
+*   **Constraints:**
+    *   `PK_Users`: Primary Key on `UserID`.
+    *   `UQ_Users_Email`: Unique constraint on `Email`.
+    *   `CK_Users_Role`: `Role` IN ('student', 'lecturer', 'teaching assistant', 'facility staff', 'department administrator', 'facility manager').
+    *   `CK_Users_AccountStatus`: `AccountStatus` IN ('active', 'inactive', 'suspended').
 
----
+### 2. Relation: `Spaces`
 
-## 2. Relation: `Spaces`
-
-*   **Purpose:** Manages details for all bookable physical spaces within the School of Computer Science.
+*   **Purpose:** Manages details of all bookable physical spaces on campus.
 *   **Attributes:**
-    *   `space_code` (VARCHAR(50))
-    *   `space_name` (VARCHAR(255))
-    *   `space_type` (VARCHAR(50))
-    *   `building` (VARCHAR(100))
-    *   `floor` (VARCHAR(20))
-    *   `room_number` (VARCHAR(20))
-    *   `capacity` (INTEGER)
-    *   `current_status` (VARCHAR(50))
-    *   `usage_policy` (TEXT)
-*   **Primary Key (PK):** `space_code`
-*   **Candidate Keys (CK):** (`building`, `floor`, `room_number`)
-*   **Key Constraints:**
-    *   `space_code` is unique and NOT NULL.
-    *   `space_name` is NOT NULL.
-    *   `space_type` is NOT NULL.
-    *   `building` is NOT NULL.
-    *   `floor` is NOT NULL.
-    *   `room_number` is NOT NULL.
-    *   `capacity` is NOT NULL.
-    *   `current_status` is NOT NULL.
-*   **Check Constraints:**
-    *   `space_type` IN ('auditorium', 'classroom', 'computer laboratory', 'project laboratory', 'meeting room', 'student workspace')
-    *   `current_status` IN ('available', 'in use', 'under maintenance', 'temporarily closed', 'retired')
-    *   `capacity` >= 0
+    *   `SpaceCode` (PK, VARCHAR(50))
+    *   `SpaceName` (VARCHAR(255), NOT NULL)
+    *   `SpaceType` (VARCHAR(50), NOT NULL)
+    *   `Building` (VARCHAR(100), NOT NULL)
+    *   `Floor` (INT, NOT NULL)
+    *   `RoomNumber` (VARCHAR(50), NOT NULL)
+    *   `Capacity` (INT, NOT NULL)
+    *   `CurrentStatus` (VARCHAR(50), NOT NULL)
+    *   `UsagePolicy` (TEXT, NULLABLE)
+*   **Constraints:**
+    *   `PK_Spaces`: Primary Key on `SpaceCode`.
+    *   `CK_Spaces_Capacity`: `Capacity` > 0.
+    *   `CK_Spaces_SpaceType`: `SpaceType` IN ('auditorium', 'classroom', 'computer laboratory', 'project laboratory', 'meeting room', 'student workspace').
+    *   `CK_Spaces_CurrentStatus`: `CurrentStatus` IN ('available', 'in use', 'under maintenance', 'temporarily closed', 'retired').
 
----
+### 3. Relation: `FacilityTypes`
 
-## 3. Relation: `Facilities`
-
-*   **Purpose:** Lists all types of equipment or features that can be present in a space.
+*   **Purpose:** Defines different types of facilities that can be present in a space.
 *   **Attributes:**
-    *   `facility_id` (INTEGER)
-    *   `facility_name` (VARCHAR(100))
-*   **Primary Key (PK):** `facility_id`
-*   **Candidate Keys (CK):** `facility_name`
-*   **Key Constraints:**
-    *   `facility_id` is unique and NOT NULL.
-    *   `facility_name` is unique and NOT NULL.
+    *   `FacilityTypeID` (PK, INT)
+    *   `TypeName` (VARCHAR(100), NOT NULL, UNIQUE)
+*   **Constraints:**
+    *   `PK_FacilityTypes`: Primary Key on `FacilityTypeID`.
+    *   `UQ_FacilityTypes_TypeName`: Unique constraint on `TypeName`.
 
----
+### 4. Relation: `SpaceFacilities`
 
-## 4. Relation: `SpaceFacilities`
-
-*   **Purpose:** Represents the many-to-many relationship between `Spaces` and `Facilities`, detailing which facilities are available in each space.
+*   **Purpose:** Links spaces to the facilities they contain (Many-to-Many relationship).
 *   **Attributes:**
-    *   `space_code` (VARCHAR(50))
-    *   `facility_id` (INTEGER)
-    *   `quantity` (INTEGER)
-    *   `notes` (TEXT)
-*   **Primary Key (PK):** (`space_code`, `facility_id`)
-*   **Foreign Keys (FK):**
-    *   `space_code` REFERENCES `Spaces`(`space_code`)
-    *   `facility_id` REFERENCES `Facilities`(`facility_id`)
-*   **Key Constraints:**
-    *   All attributes forming the PK are NOT NULL.
-*   **Check Constraints:**
-    *   `quantity` >= 0
+    *   `SpaceCode` (PK, FK to `Spaces.SpaceCode`)
+    *   `FacilityTypeID` (PK, FK to `FacilityTypes.FacilityTypeID`)
+*   **Constraints:**
+    *   `PK_SpaceFacilities`: Composite Primary Key on (`SpaceCode`, `FacilityTypeID`).
+    *   `FK_SpaceFacilities_SpaceCode`: Foreign Key referencing `Spaces(SpaceCode)`.
+    *   `FK_SpaceFacilities_FacilityTypeID`: Foreign Key referencing `FacilityTypes(FacilityTypeID)`.
 
----
+### 5. Relation: `Bookings`
 
-## 5. Relation: `Bookings`
-
-*   **Purpose:** Stores all booking requests, their status, and approval/rejection details.
+*   **Purpose:** Stores all booking requests, their status, and usage details.
 *   **Attributes:**
-    *   `booking_id` (INTEGER)
-    *   `space_code` (VARCHAR(50))
-    *   `requester_user_id` (INTEGER)
-    *   `requested_start_time` (TIMESTAMP)
-    *   `requested_end_time` (TIMESTAMP)
-    *   `purpose_of_use` (VARCHAR(100))
-    *   `expected_participants` (INTEGER)
-    *   `booking_status` (VARCHAR(50))
-    *   `submission_timestamp` (TIMESTAMP)
-    *   `approver_user_id` (INTEGER) (Nullable)
-    *   `decision_time` (TIMESTAMP) (Nullable)
-    *   `decision_note` (TEXT) (Nullable)
-    *   `rejection_reason` (TEXT) (Nullable)
-*   **Primary Key (PK):** `booking_id`
-*   **Foreign Keys (FK):**
-    *   `space_code` REFERENCES `Spaces`(`space_code`)
-    *   `requester_user_id` REFERENCES `Users`(`user_id`)
-    *   `approver_user_id` REFERENCES `Users`(`user_id`)
-*   **Key Constraints:**
-    *   `booking_id` is unique and NOT NULL.
-    *   `space_code` is NOT NULL.
-    *   `requester_user_id` is NOT NULL.
-    *   `requested_start_time` is NOT NULL.
-    *   `requested_end_time` is NOT NULL.
-    *   `purpose_of_use` is NOT NULL.
-    *   `booking_status` is NOT NULL.
-    *   `submission_timestamp` is NOT NULL.
-*   **Check Constraints:**
-    *   `requested_end_time` > `requested_start_time`
-    *   `expected_participants` >= 0
-    *   `booking_status` IN ('pending', 'approved', 'rejected', 'cancelled', 'checked in', 'completed', 'no-show')
-    *   `purpose_of_use` IN ('lecture', 'examination', 'seminar', 'workshop', 'meeting', 'student activity', 'administrative event')
-    *   Conditional: `rejection_reason` IS NOT NULL if `booking_status` = 'rejected'.
-    *   Conditional: `approver_user_id`, `decision_time`, `decision_note` are NOT NULL if `booking_status` IN ('approved', 'rejected').
+    *   `BookingID` (PK, INT)
+    *   `RequesterUserID` (FK to `Users.UserID`, NOT NULL)
+    *   `SpaceCode` (FK to `Spaces.SpaceCode`, NOT NULL)
+    *   `RequestedStartTime` (DATETIME, NOT NULL)
+    *   `RequestedEndTime` (DATETIME, NOT NULL)
+    *   `Purpose` (VARCHAR(100), NOT NULL)
+    *   `ExpectedParticipants` (INT, NOT NULL)
+    *   `BookingStatus` (VARCHAR(50), NOT NULL)
+    *   `ApproverUserID` (FK to `Users.UserID`, NULLABLE)
+    *   `DecisionTime` (DATETIME, NULLABLE)
+    *   `DecisionNote` (TEXT, NULLABLE)
+    *   `RejectionReason` (TEXT, NULLABLE)
+    *   `CheckInUserID` (FK to `Users.UserID`, NULLABLE)
+    *   `ActualStartTime` (DATETIME, NULLABLE)
+    *   `InitialCondition` (TEXT, NULLABLE)
+    *   `ActualEndTime` (DATETIME, NULLABLE)
+    *   `FinalCondition` (TEXT, NULLABLE)
+    *   `UsageNotes` (TEXT, NULLABLE)
+*   **Constraints:**
+    *   `PK_Bookings`: Primary Key on `BookingID`.
+    *   `FK_Bookings_RequesterUserID`: Foreign Key referencing `Users(UserID)`.
+    *   `FK_Bookings_SpaceCode`: Foreign Key referencing `Spaces(SpaceCode)`.
+    *   `FK_Bookings_ApproverUserID`: Foreign Key referencing `Users(UserID)` (for staff/manager who approved/rejected).
+    *   `FK_Bookings_CheckInUserID`: Foreign Key referencing `Users(UserID)` (for facility staff who checked in).
+    *   `CK_Bookings_TimeOrderRequested`: `RequestedEndTime` > `RequestedStartTime`.
+    *   `CK_Bookings_TimeOrderActual`: `ActualEndTime` > `ActualStartTime` (if both are not NULL).
+    *   `CK_Bookings_Purpose`: `Purpose` IN ('lecture', 'examination', 'seminar', 'workshop', 'meeting', 'student activity', 'administrative event').
+    *   `CK_Bookings_ExpectedParticipants`: `ExpectedParticipants` >= 0.
+    *   `CK_Bookings_BookingStatus`: `BookingStatus` IN ('pending', 'approved', 'rejected', 'cancelled', 'checked in', 'completed', 'no-show').
 
----
+### 6. Relation: `MaintenanceRecords`
 
-## 6. Relation: `BookingSessions`
-
-*   **Purpose:** Records the actual usage details of an approved booking, including check-in and completion information.
+*   **Purpose:** Tracks maintenance activities for spaces.
 *   **Attributes:**
-    *   `session_id` (INTEGER)
-    *   `booking_id` (INTEGER)
-    *   `check_in_time` (TIMESTAMP)
-    *   `check_in_staff_user_id` (INTEGER)
-    *   `initial_condition_notes` (TEXT)
-    *   `actual_end_time` (TIMESTAMP) (Nullable)
-    *   `completion_staff_user_id` (INTEGER) (Nullable)
-    *   `final_condition_notes` (TEXT) (Nullable)
-    *   `usage_notes` (TEXT) (Nullable)
-*   **Primary Key (PK):** `session_id`
-*   **Candidate Keys (CK):** `booking_id` (Ensures one session per booking)
-*   **Foreign Keys (FK):**
-    *   `booking_id` REFERENCES `Bookings`(`booking_id`)
-    *   `check_in_staff_user_id` REFERENCES `Users`(`user_id`)
-    *   `completion_staff_user_id` REFERENCES `Users`(`user_id`)
-*   **Key Constraints:**
-    *   `session_id` is unique and NOT NULL.
-    *   `booking_id` is unique and NOT NULL.
-    *   `check_in_time` is NOT NULL.
-    *   `check_in_staff_user_id` is NOT NULL.
-*   **Check Constraints:**
-    *   `actual_end_time` > `check_in_time` (if `actual_end_time` is not null)
-
----
-
-## 7. Relation: `MaintenanceRecords`
-
-*   **Purpose:** Tracks all maintenance activities and incidents related to spaces.
-*   **Attributes:**
-    *   `maintenance_id` (INTEGER)
-    *   `space_code` (VARCHAR(50))
-    *   `reporter_user_id` (INTEGER)
-    *   `assigned_staff_user_id` (INTEGER) (Nullable)
-    *   `problem_description` (TEXT)
-    *   `start_time` (TIMESTAMP)
-    *   `completion_time` (TIMESTAMP) (Nullable)
-    *   `maintenance_status` (VARCHAR(50))
-    *   `result_note` (TEXT) (Nullable)
-*   **Primary Key (PK):** `maintenance_id`
-*   **Foreign Keys (FK):**
-    *   `space_code` REFERENCES `Spaces`(`space_code`)
-    *   `reporter_user_id` REFERENCES `Users`(`user_id`)
-    *   `assigned_staff_user_id` REFERENCES `Users`(`user_id`)
-*   **Key Constraints:**
-    *   `maintenance_id` is unique and NOT NULL.
-    *   `space_code` is NOT NULL.
-    *   `reporter_user_id` is NOT NULL.
-    *   `problem_description` is NOT NULL.
-    *   `start_time` is NOT NULL.
-    *   `maintenance_status` is NOT NULL.
-*   **Check Constraints:**
-    *   `completion_time` > `start_time` (if `completion_time` is not null)
-    *   `maintenance_status` IN ('pending', 'in progress', 'completed', 'cancelled')
-
----
+    *   `MaintenanceID` (PK, INT)
+    *   `SpaceCode` (FK to `Spaces.SpaceCode`, NOT NULL)
+    *   `ReporterUserID` (FK to `Users.UserID`, NOT NULL)
+    *   `AssignedStaffUserID` (FK to `Users.UserID`, NULLABLE)
+    *   `ProblemDescription` (TEXT, NOT NULL)
+    *   `ReportTime` (DATETIME, NOT NULL)
+    *   `CompletionTime` (DATETIME, NULLABLE)
+    *   `MaintenanceStatus` (VARCHAR(50), NOT NULL)
+    *   `ResultNote` (TEXT, NULLABLE)
+*   **Constraints:**
+    *   `PK_MaintenanceRecords`: Primary Key on `MaintenanceID`.
+    *   `FK_MaintenanceRecords_SpaceCode`: Foreign Key referencing `Spaces(SpaceCode)`.
+    *   `FK_MaintenanceRecords_ReporterUserID`: Foreign Key referencing `Users(UserID)`.
+    *   `FK_MaintenanceRecords_AssignedStaffUserID`: Foreign Key referencing `Users(UserID)` (for staff assigned to maintenance).
+    *   `CK_MaintenanceRecords_TimeOrder`: `CompletionTime` > `ReportTime` (if `CompletionTime` is not NULL).
+    *   `CK_MaintenanceRecords_Status`: `MaintenanceStatus` IN ('reported', 'in progress', 'completed', 'cancelled').
 ```

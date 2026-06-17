@@ -1,37 +1,34 @@
 import os
 from google import genai
 from google.genai import types
-from pypdf import PdfReader
-from dotenv import load_dotenv  # Add this import
+from dotenv import load_dotenv
 
 # Load the environment variables from the .env file
 load_dotenv() 
 
-# 1. Initialize the Gemini Client
-# It will automatically find the GEMINI_API_KEY from the .env file we just loaded
+# Initialize the Gemini Client
 client = genai.Client()
 
 def read_file(filepath):
+    """Reads standard text/markdown files"""
     with open(filepath, 'r', encoding='utf-8') as f:
         return f.read()
-
-def read_pdf(filepath):
-    reader = PdfReader(filepath)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text() + "\n"
-    return text
 
 def main():
     print("Loading Agent Profile and Skills...")
     agent_profile = read_file("AGENT.md")
     agent_skills = read_file("SKILL.md")
     
-    print("Reading CS486_Project.pdf...")
-    if not os.path.exists("CS486_Project.pdf"):
-        print("Error: Please place 'CS486_Project.pdf' in this directory.")
+    print("Reading business-requirement.md...")
+    # Update the target file name here
+    target_file = "business-requirement.md"
+    
+    if not os.path.exists(target_file):
+        print(f"Error: Please place '{target_file}' in this directory.")
         return
-    project_requirements = read_pdf("CS486_Project.pdf")
+        
+    # We can now use the standard read_file function instead of a PDF reader
+    project_requirements = read_file(target_file)
 
     # Combine profile and skills into the System Instruction
     system_instruction = f"""

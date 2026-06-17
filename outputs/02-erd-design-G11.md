@@ -1,85 +1,81 @@
 ```mermaid
 erDiagram
     User {
-        VARCHAR user_id PK "Unique university account ID"
-        VARCHAR full_name
-        VARCHAR email
-        VARCHAR phone_number
-        VARCHAR role "e.g., student, lecturer, TA, facility staff, dept admin, facility manager"
-        VARCHAR department
-        VARCHAR account_status "e.g., active, inactive"
+        VARCHAR userID PK "User's unique identifier (e.g., university ID)"
+        VARCHAR fullName "Full name of the user"
+        VARCHAR email "User's email address"
+        VARCHAR phoneNumber "User's phone number"
+        VARCHAR role "User's role (e.g., student, lecturer, facility staff, facility manager)"
+        VARCHAR department "User's academic or administrative department"
+        VARCHAR accountStatus "Current status of the user's account (e.g., active, inactive, suspended)"
     }
 
     Space {
-        VARCHAR space_code PK "Unique identifier for the space"
-        VARCHAR space_name
-        VARCHAR space_type "e.g., auditorium, classroom, computer lab, meeting room"
-        VARCHAR building
-        VARCHAR floor
-        VARCHAR room_number
-        INT capacity
-        VARCHAR current_status "e.g., available, in use, under maintenance, temporarily closed, retired"
-        TEXT usage_policy
+        VARCHAR spaceCode PK "Unique code for the space (e.g., COM1-0201)"
+        VARCHAR spaceName "Descriptive name of the space (e.g., Auditorium 1, Computer Lab 2)"
+        VARCHAR spaceType "Type of space (e.g., auditorium, classroom, computer laboratory, meeting room)"
+        VARCHAR building "Building where the space is located"
+        INT floor "Floor number of the space"
+        VARCHAR roomNumber "Room number within the building/floor"
+        INT capacity "Maximum capacity of the space"
+        VARCHAR currentStatus "Current operational status of the space (e.g., available, in use, under maintenance, temporarily closed, retired)"
+        TEXT usagePolicy "Policy governing the use of the space"
     }
 
-    Facility_Type {
-        INT facility_type_id PK "Unique ID for facility type"
-        VARCHAR facility_name "e.g., projector, whiteboard, microphone"
+    Facility {
+        VARCHAR facilityName PK "Name of the facility type (e.g., Projector, Whiteboard, Microphone, Computer)"
+        TEXT description "Description of the facility type"
     }
 
     Booking {
-        INT booking_id PK "Unique booking identifier"
-        VARCHAR requester_user_id FK "User who submitted the booking"
-        VARCHAR space_code FK "Space being booked"
-        DATETIME requested_start_time
-        DATETIME requested_end_time
-        VARCHAR purpose_of_use "e.g., lecture, examination, seminar, workshop"
-        INT expected_participants
-        VARCHAR booking_status "e.g., pending, approved, rejected, cancelled, checked in, completed, no-show"
-        DATETIME submission_time "Timestamp when the booking was submitted"
-
-        VARCHAR approved_by_user_id FK "User (staff/manager) who approved/rejected"
-        DATETIME approval_decision_time
-        TEXT approval_note
-        TEXT rejection_reason
-
-        VARCHAR checked_in_by_user_id FK "User (facility staff) who checked in"
-        DATETIME actual_start_time
-        TEXT initial_condition "Condition of space at check-in"
-
-        VARCHAR completed_by_user_id FK "User (facility staff) who completed"
-        DATETIME actual_end_time
-        TEXT final_condition "Condition of space at completion"
-        TEXT usage_notes
+        INT bookingID PK "Unique identifier for the booking request"
+        VARCHAR spaceCode FK "Foreign key to Space (the space being booked)"
+        VARCHAR requesterUserID FK "Foreign key to User (the user who submitted the booking request)"
+        VARCHAR approverUserID FK NULL "Foreign key to User (the staff/manager who approved/rejected the booking)"
+        VARCHAR checkInStaffUserID FK NULL "Foreign key to User (the facility staff who checked in the booking)"
+        VARCHAR completeStaffUserID FK NULL "Foreign key to User (the facility staff who completed the booking)"
+        DATETIME requestedStartTime "Requested start time for the booking"
+        DATETIME requestedEndTime "Requested end time for the booking"
+        VARCHAR purposeOfUse "Purpose of the booking (e.g., lecture, examination, seminar, workshop, meeting)"
+        INT expectedParticipants "Expected number of participants for the booking"
+        VARCHAR status "Current status of the booking (e.g., pending, approved, rejected, checked in, completed, no-show)"
+        DATETIME decisionTime NULL "Timestamp when the approval/rejection decision was made"
+        TEXT decisionNote NULL "Notes related to the approval/rejection decision"
+        TEXT rejectionReason NULL "Reason if the booking was rejected"
+        DATETIME actualStartTime NULL "Actual start time of the session (recorded at check-in)"
+        TEXT initialCondition NULL "Initial condition of the space (recorded at check-in)"
+        DATETIME actualEndTime NULL "Actual end time of the session (recorded at completion)"
+        TEXT finalCondition NULL "Final condition of the space (recorded at completion)"
+        TEXT usageNotes NULL "Notes about the space usage during the session"
     }
 
-    Maintenance_Record {
-        INT maintenance_id PK "Unique maintenance record identifier"
-        VARCHAR space_code FK "Space under maintenance"
-        VARCHAR reporter_user_id FK "User who reported the problem"
-        VARCHAR assigned_staff_user_id FK "User (staff) assigned to fix the problem"
-        TEXT problem_description
-        DATETIME reported_time "Timestamp when the problem was reported"
-        DATETIME scheduled_start_time "When maintenance work is scheduled to begin"
-        DATETIME completion_time
-        VARCHAR maintenance_status "e.g., pending, in progress, completed, cancelled"
-        TEXT result_note
+    MaintenanceRecord {
+        INT maintenanceID PK "Unique identifier for the maintenance record"
+        VARCHAR spaceCode FK "Foreign key to Space (the space requiring maintenance)"
+        VARCHAR reporterUserID FK "Foreign key to User (the user who reported the problem)"
+        VARCHAR assignedStaffUserID FK NULL "Foreign key to User (the staff member assigned to resolve the maintenance issue)"
+        TEXT problemDescription "Detailed description of the problem"
+        DATETIME startTime "Time when the maintenance activity started"
+        DATETIME completionTime NULL "Time when the maintenance activity was completed"
+        VARCHAR status "Status of the maintenance (e.g., pending, in progress, completed, cancelled)"
+        TEXT resultNote NULL "Notes about the maintenance outcome or resolution"
     }
 
-    Space_Facility {
-        VARCHAR space_code PK,FK "Space identifier"
-        INT facility_type_id PK,FK "Facility type identifier"
+    SpaceFacility {
+        VARCHAR spaceCode PK,FK "Foreign key to Space"
+        VARCHAR facilityName PK,FK "Foreign key to Facility"
     }
 
-    User ||--o{ Booking : "submits"
-    User ||--o{ Booking : "approves/rejects"
-    User ||--o{ Booking : "checks_in"
-    User ||--o{ Booking : "completes"
-    User ||--o{ Maintenance_Record : "reports"
-    User ||--o{ Maintenance_Record : "assigned_to"
+    User ||--o{ Booking : requests
+    User ||--o{ Booking : approves
+    User ||--o{ Booking : checks_in
+    User ||--o{ Booking : completes
+    User ||--o{ MaintenanceRecord : reports
+    User ||--o{ MaintenanceRecord : is_assigned_to
 
-    Space ||--o{ Booking : "is_booked_for"
-    Space ||--o{ Maintenance_Record : "has_maintenance"
-    Space ||--o{ Space_Facility : "has_facility_type"
-    Facility_Type ||--o{ Space_Facility : "is_in_space"
+    Space ||--o{ Booking : has
+    Space ||--o{ MaintenanceRecord : has
+    Space ||--o{ SpaceFacility : has
+
+    Facility ||--o{ SpaceFacility : is_part_of
 ```
