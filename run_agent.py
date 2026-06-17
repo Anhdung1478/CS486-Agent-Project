@@ -16,12 +16,12 @@ def read_file(filepath):
 
 def main():
     print("Loading Agent Profile and Skills...")
-    agent_profile = read_file("AGENT.md")
-    agent_skills = read_file("SKILL.md")
+    agent_profile = read_file("AGENTS.md")
+    agent_skills = read_file(".opencode/skills/db-design-pipeline/SKILL.md")
     
     print("Reading business-requirement.md...")
     # Update the target file name here
-    target_file = "business-requirement.md"
+    target_file = "req/business-requirement.md"
     
     if not os.path.exists(target_file):
         print(f"Error: Please place '{target_file}' in this directory.")
